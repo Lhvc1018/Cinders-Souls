@@ -1,0 +1,219 @@
+using System;
+using UnityEngine;
+
+namespace Codice.Characters
+{
+    public enum PlayerClass { Warrior, Tank, Archer, Mage, Shinobi, Berserker }
+    public enum WeaponKind { Sword, Axe, Bow, Dagger, Hammer, Polearm, Scythe, Shield, Staff, Musket }
+    public enum PassiveKind { Frenzy, VampiricHeart, Overload, MercuryBoots, ThornArmor }
+
+    [Serializable]
+    public sealed class WeaponInstance
+    {
+        public WeaponKind kind;
+        public bool katana, shuriken;
+        [Range(1, 4)] public int tier = 1;
+        public int ammunition;
+        public int reserveAmmunition = 18;
+        public float reloadProgress;
+        [Range(0, 100)] public float ultimateCharge;
+        public float Damage => shuriken?22:Mathf.Lerp(BaseDamage, MaxDamage, (tier - 1) / 3f);
+        float BaseDamage => new[] { 18f, 55, 75, 12, 60, 35, 42, 25, 45, 95 }[(int)kind];
+        float MaxDamage => new[] { 65f, 190, 250, 42, 195, 115, 135, 80, 145, 280 }[(int)kind];
+        public float AttacksPerSecond => shuriken?3:Mathf.Lerp(new[] { 2.5f, .7f, .8f, 4, .65f, 1.3f, 1.1f, 1, 1.2f, .5f }[(int)kind], new[] { 3.4f, .85f, .95f, 4.5f, .85f, 1.6f, 1.4f, 1.2f, 1.5f, .5f }[(int)kind], (tier - 1) / 3f);
+        public bool Ranged => kind == WeaponKind.Bow || kind == WeaponKind.Staff || kind == WeaponKind.Musket;
+        public int Capacity => shuriken ? 30 : kind == WeaponKind.Bow ? Mathf.RoundToInt(Mathf.Lerp(24, 36, (tier - 1) / 3f)) : kind == WeaponKind.Musket ? 6 : 0;
+        /// Unity's serializer cannot store a null slot in the weapons array: it writes a default WeaponInstance (a tier-1 Sword).
+        /// Only weapons built by this constructor are real; the rest are serializer padding and become null again on Restore.
+        [SerializeField] bool real;
+        public bool Real => real;
+        public WeaponInstance MarkReal() { real = true; return this; }
+        public WeaponInstance(WeaponKind kind, int tier = 1)
+        { this.kind = kind; this.tier = Mathf.Clamp(tier, 1, 4); ammunition = Capacity; real = true; }
+    }
+
+    // Runtime data and transactions, independent of the future HUD and wave controller.
+    [Serializable]
+    public sealed partial class CharacterState
+    {
+        [SerializeField] PlayerClass playerClass;
+        [SerializeField] float health;
+        [SerializeField] float mana, manaDelay;
+        [SerializeField] StaffSpell selectedSpell;
+        public StaffSpell SelectedSpell => selectedSpell;
+        public void SelectSpell(int index) { if(index<0||index>3)return; selectedSpell=(StaffSpell)index; Changed?.Invoke(); }
+        public const float StaffManaCost=20, StaffUltimateManaCost=40, ManaRegen=8;
+        public float MaxMana => BoonManaFactor * ( (playerClass==PlayerClass.Mage?100:60)+(HasBlessing(StatueBlessing.Mind)?25:0));
+        public float Mana => Codice.Mechanics.SessionCheats.God ? MaxMana : mana;
+        public bool HasStaff => GetWeapon(0) is var _ && Array.Exists(weapons,w=>w!=null&&w.kind==WeaponKind.Staff);
+        public bool SpendMana(float amount)
+        {
+            if(!IsAlive||amount<=0||float.IsNaN(amount)||float.IsInfinity(amount))return false;
+            if(Codice.Mechanics.SessionCheats.God)return true;
+            amount*=playerClass==PlayerClass.Mage?.8f:1;
+            if(mana<amount)return false;
+            mana-=amount;manaDelay=1.5f;Changed?.Invoke();return true;
+        }
+        public void TickMana(float dt)
+        {
+            if(!IsAlive||dt<=0||float.IsNaN(dt)||float.IsInfinity(dt))return;
+            float recharge=Mathf.Max(0,dt-manaDelay);manaDelay=Mathf.Max(0,manaDelay-dt);
+            mana=Mathf.Min(MaxMana,mana+ManaRegen*BoonManaRegen*recharge);
+            TickArmor(dt);
+        }
+        [SerializeField] int gold;
+        // Descent contracts belong to each player and travel with the run snapshot (solo and coop).
+        [SerializeField] bool hiredPilgrim, bondedWisp;
+        public bool HiredPilgrim { get => hiredPilgrim; set { hiredPilgrim = value; Changed?.Invoke(); } }
+        public bool BondedWisp { get => bondedWisp; set { bondedWisp = value; Changed?.Invoke(); } }
+        [SerializeField] WeaponInstance[] weapons = new WeaponInstance[2];
+        [SerializeField] int activeSlot;
+        [SerializeField] PassiveKind[] passives = new PassiveKind[3];
+        [SerializeField] int passiveCount;
+        [SerializeField] float[] passiveRemaining = new float[3];
+        [SerializeField] float[] passiveCooldown = new float[3];
+        public const float PassiveDuration = 10, PassiveCooldown = 20;
+        public float PassiveTime(int slot) => slot >= 0 && slot < passiveCount ? passiveRemaining[slot] : 0;
+        public float PassiveWait(int slot) => slot >= 0 && slot < passiveCount ? passiveCooldown[slot] : 0;
+        public bool ActivatePassive(int slot)
+        {
+            // Kept for legacy callers. Mutations now work while equipped, without input.
+            return false;
+        }
+        public void TickPassives(float dt)
+        {
+            if (!IsAlive || dt <= 0 || float.IsNaN(dt) || float.IsInfinity(dt)) return;
+            TickRelics(dt);
+            for (int i = 0; i < passiveCount; i++)
+            { passiveRemaining[i] = Mathf.Max(0, passiveRemaining[i] - dt); passiveCooldown[i] = Mathf.Max(0, passiveCooldown[i] - dt); }
+        }
+        public event Action Changed;
+        public event Action Died;
+        public PlayerClass Class => playerClass;
+        public float ClassDamageMultiplier => playerClass == PlayerClass.Tank ? 1.2f : playerClass == PlayerClass.Berserker ? 1.1f : 1;
+        public float MaxHealth => BoonHealthFactor * ( playerClass == PlayerClass.Berserker ? 105 : playerClass == PlayerClass.Tank ? 180 : playerClass == PlayerClass.Archer || playerClass == PlayerClass.Mage ? 100 : 120);
+        public float MoveSpeed => BoonSpeedFactor * ( (playerClass == PlayerClass.Tank ? 4.8f : playerClass == PlayerClass.Berserker ? 8.2f : playerClass == PlayerClass.Shinobi ? 7.8f : playerClass == PlayerClass.Archer ? 7.4f : 6.5f) * (HasPassive(PassiveKind.MercuryBoots) ? 1.2f : 1));
+        public bool DualWield => ActiveWeapon!=null&&!ActiveWeapon.katana&&(ActiveWeapon.kind==WeaponKind.Sword||ActiveWeapon.kind==WeaponKind.Dagger)&&weapons[1-activeSlot]!=null&&weapons[1-activeSlot].kind==ActiveWeapon.kind&&!weapons[1-activeSlot].katana;
+        public float AttackSpeedMultiplier => (HasPassive(PassiveKind.Frenzy)?1.25f:1)*(DualWield?1.3f:1)*ClassArsenal.SpeedFactor(this,ActiveWeapon)*BoonAttackSpeed;
+        public bool HasPassive(PassiveKind passive)
+        { for (int i = 0; i < passiveCount; i++) if (passives[i] == passive) return true; return false; }
+        public void ReviveWith(float fraction){NetworkRevive();health=Mathf.Max(1,MaxHealth*Mathf.Clamp01(fraction));Changed?.Invoke();}
+        public void NetworkRevive(){health=MaxHealth;mana=MaxMana;armor=MaxArmor;armorDelay=0;Changed?.Invoke();}
+        public string Capture() => JsonUtility.ToJson(this);
+        public void Restore(string snapshot)=>Restore(snapshot,false);
+        internal void Restore(string snapshot,bool keepVitals) { var resources=GetVitals(); var previousWeapons=weapons==null?null:(WeaponInstance[])weapons.Clone(); JsonUtility.FromJsonOverwrite(snapshot, this);if(keepVitals)SetVitals(resources);
+            if(previousWeapons!=null&&weapons!=null)for(int i=0;i<Mathf.Min(previousWeapons.Length,weapons.Length);i++){var old=previousWeapons[i];var fresh=weapons[i];if(old!=null&&fresh!=null&&old.kind==fresh.kind&&old.katana==fresh.katana&&old.shuriken==fresh.shuriken&&old.tier==fresh.tier&&old.Real==fresh.Real){old.ammunition=fresh.ammunition;old.reserveAmmunition=fresh.reserveAmmunition;old.reloadProgress=fresh.reloadProgress;old.ultimateCharge=fresh.ultimateCharge;weapons[i]=old;}}
+            bool flagged=snapshot!=null&&snapshot.Contains("\"real\"");if(!flagged)foreach(var w in weapons)if(w!=null&&w.tier>=1)w.MarkReal();   /* old saves without the flag */Clean();   /* empty slot padded by the serializer (was turning into a 2nd sword) */armor=Mathf.Clamp(armor,0,MaxArmor);Changed?.Invoke(); }
+        public void NotifyChanged() => Changed?.Invoke();
+        public float Health => health;
+        public int Gold => Codice.Mechanics.SessionCheats.Rich ? int.MaxValue : gold;
+        public bool IsAlive => health > 0;
+        public int ActiveSlot => activeSlot;
+        public int PassiveCount => passiveCount;
+        /* Instantiate/serialization pad null slots with fake default Swords (the 'two swords' bug): drop any slot not marked real. */
+        void Clean() { if (weapons == null || weapons.Length != 2) { var w = new WeaponInstance[2]; if (weapons != null) for (int i = 0; i < Mathf.Min(2, weapons.Length); i++) w[i] = weapons[i]; weapons = w; } activeSlot = Mathf.Clamp(activeSlot, 0, 1); for (int i = 0; i < 2; i++) if (weapons[i] != null && (!weapons[i].Real || weapons[i].tier < 1)) weapons[i] = null; if (weapons[activeSlot] == null && weapons[1 - activeSlot] != null) activeSlot = 1 - activeSlot; }
+        public WeaponInstance ActiveWeapon { get { Clean(); return weapons[activeSlot]; } }
+        public WeaponInstance GetWeapon(int slot) { Clean(); return slot >= 0 && slot < 2 ? weapons[slot] : null; }
+        public PassiveKind GetPassive(int slot) => passives[slot];
+
+        public void Initialize(PlayerClass selected)
+        {
+            blessings=0;hiredPilgrim=bondedWisp=false;boons=new int[16];lastBreathSpent=false;ResetTalismans();selectedSpell=StaffSpell.Arcane; playerClass = selected; health = MaxHealth; mana=MaxMana; manaDelay=0; gold = 0; activeSlot = 0; passiveCount = 0;
+            passiveRemaining = new float[3]; passiveCooldown = new float[3];
+            ResetRelics();estusCharges=EstusCapacity;
+            armor=MaxArmor;armorDelay=0;
+            weapons = new WeaponInstance[2];
+            weapons[0] = new WeaponInstance(selected == PlayerClass.Mage ? WeaponKind.Staff : selected == PlayerClass.Tank ? WeaponKind.Hammer : selected == PlayerClass.Archer ? WeaponKind.Bow : WeaponKind.Sword);
+            if(selected==PlayerClass.Berserker)weapons[1]=new WeaponInstance(WeaponKind.Sword);
+            if(selected==PlayerClass.Shinobi){weapons[0].katana=true;weapons[1]=new WeaponInstance(WeaponKind.Bow){shuriken=true,ammunition=30};}
+            Changed?.Invoke();
+        }
+        [NonSerialized] public bool LaboratoryImmortal;
+        public bool Damage(float amount,bool bypassArmor=false)
+        {
+            if (!IsAlive || float.IsNaN(amount) || float.IsInfinity(amount) || amount <= 0) return false;
+            if(Codice.Mechanics.SessionCheats.God)return false;
+            armorDelay=ArmorDelay;
+            if(!bypassArmor){float absorbed=Mathf.Min(armor,amount);armor-=absorbed;amount-=absorbed;}
+            amount*=BoonGuard;
+            if(SaveFromDeath(amount)){health=1;Changed?.Invoke();Codice.UI.RunHUD.Instance?.Announce("ÚLTIMO ALIENTO · La ceniza te sostiene");return true;}
+            health = Mathf.Max(LaboratoryImmortal ? 1 : 0, health - amount); Changed?.Invoke();
+            if (!IsAlive) Died?.Invoke();
+            return true;
+        }
+        public bool Heal(float amount)
+        {
+            if (!IsAlive || health >= MaxHealth || amount <= 0 || float.IsNaN(amount) || float.IsInfinity(amount)) return false;
+            health = Mathf.Min(MaxHealth, health + amount); Changed?.Invoke(); return true;
+        }
+        public bool AddGold(int amount)
+        {
+            if (amount > 0) amount = BoonGold(amount);
+            if (amount <= 0 || gold > int.MaxValue - amount) return false;
+            gold += amount; Changed?.Invoke(); return true;
+        }
+        public bool SpendGold(int amount)
+        {
+            if (amount < 0 || !IsAlive) return false;
+            if(Codice.Mechanics.SessionCheats.Rich)return true;
+            if(amount>gold)return false;
+            gold -= amount; Changed?.Invoke(); return true;
+        }
+        public bool SelectWeapon(int slot)
+        {
+            Clean(); if (slot < 0 || slot > 1 || weapons[slot] == null) return false;
+            activeSlot = slot; Changed?.Invoke(); return true;
+        }
+        public WeaponInstance Equip(WeaponInstance weapon)
+        {
+            if (weapon == null) return null; weapon.MarkReal(); Clean();
+            if (ClassArsenal.Forbidden(playerClass, weapon)) return weapon; // proscribed: stays where it was
+            int slot = weapons[0] == null ? 0 : weapons[1] == null ? 1 : activeSlot;
+            var previous = weapons[slot]; weapons[slot] = weapon; activeSlot = slot;
+            Changed?.Invoke(); return previous;
+        }
+        public WeaponInstance EquipIntoSlot(WeaponInstance weapon,int slot)
+        {
+            if(weapon==null||slot<0||slot>1||ClassArsenal.Forbidden(playerClass,weapon))return weapon;weapon.MarkReal();Clean();
+            var previous=weapons[slot];weapons[slot]=weapon;activeSlot=slot;Changed?.Invoke();return previous;
+        }
+        public bool CanEquipPassive(PassiveKind passive, int replaceSlot)
+        {
+            if(!IsAlive || !Enum.IsDefined(typeof(PassiveKind),passive))return false;
+            for (int i = 0; i < passiveCount; i++) if (passives[i] == passive) return false;
+            return passiveCount < 3 || (replaceSlot >= 0 && replaceSlot < 3);
+        }
+        public bool EquipPassive(PassiveKind passive, int replaceSlot = -1)
+        {
+            if (!CanEquipPassive(passive, replaceSlot)) return false;
+            int slot = passiveCount < 3 ? passiveCount++ : replaceSlot;
+            passives[slot] = passive; passiveRemaining[slot] = passiveCooldown[slot] = 0;
+            Changed?.Invoke(); return true;
+        }
+        public bool ConsumeAmmo()
+        {
+            var weapon = ActiveWeapon;
+            if (weapon == null || (weapon.Capacity > 0 && weapon.ammunition <= 0)) return false;
+            if(weapon.kind==WeaponKind.Staff&&!SpendMana(StaffManaCost))return false;
+            if (weapon.Capacity > 0) weapon.ammunition--;
+            Changed?.Invoke(); return true;
+        }
+        public bool AddAmmunition(int amount, int ammoType = 0)
+        {
+            var weapon = ActiveWeapon;
+            if(ammoType!=0)weapon=Array.Find(weapons,w=>w!=null&&w.kind==WeaponKind.Bow&&w.shuriken==(ammoType==2)&&w.ammunition<w.Capacity);
+            if (!IsAlive || amount <= 0 || weapon == null || weapon.Capacity == 0) return false;
+            if (weapon.kind == WeaponKind.Musket)
+            {
+                if (weapon.reserveAmmunition >= 60) return false;
+                weapon.reserveAmmunition += Mathf.Min(amount, 60 - weapon.reserveAmmunition);
+                Changed?.Invoke(); return true;
+            }
+            if (weapon.ammunition >= weapon.Capacity) return false;
+            weapon.ammunition += Mathf.Min(amount, weapon.Capacity - weapon.ammunition);
+            Changed?.Invoke(); return true;
+        }
+        // Arrows and shuriken are replenished by world pickups, never by waiting.
+        public void TickAmmunition(float deltaTime) { }
+    }
+}

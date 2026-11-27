@@ -9,3 +9,4 @@ Action RPG de fantasía oscura para Windows x64. Explora mazmorras procedurales 
 3. Para jugar juntos, todos deben instalar la misma versión. En **Cooperativo**, selecciona **Por internet** o **Misma red**.
 
 Este repositorio distribuye la versión jugable compilada para Windows.
+También incluye los scripts de juego y editor, las escenas y el inventario de paquetes. Para editar y recompilar se requieren los recursos de arte, los paquetes locales y la configuración del proyecto original.

@@ -1,0 +1,21 @@
+using System;using System.Linq;using System.Reflection;using System.Text;using System.Threading.Tasks;using UnityEngine;using UnityEngine.AI;
+using Codice.Characters;using Codice.Enemies;using Codice.Mechanics;
+public static class AgentCombatPlus{
+ static readonly BindingFlags F=BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.Public;
+ static BasicEnemy Dummy(PlayerCharacter p,bool facingAway){var prefab=Resources.Load<BasicEnemy>("ExpeditionEnemies/MuckResidents/Salteador de la cripta");NavMesh.SamplePosition(p.transform.position+p.transform.forward*1.7f,out var hit,3,NavMesh.AllAreas);var e=UnityEngine.Object.Instantiate(prefab,hit.position,Quaternion.LookRotation(facingAway?p.transform.forward:-p.transform.forward));e.Initialize(p,25);e.SetPaused(false);return e;}
+ static async Task<float> Strike(PlayerCharacter p,BasicEnemy e,bool away){var combat=p.GetComponent<PlayerCombat>();float got=0;Action<CombatFeedback.Result> on=r=>{if(r.target==e&&got==0)got=r.amount;};CombatFeedback.Resolved+=on;
+  try{var dir=Vector3.ProjectOnPlane(e.transform.position-p.transform.position,Vector3.up).normalized;p.transform.rotation=Quaternion.LookRotation(dir);p.view.transform.rotation=Quaternion.LookRotation(dir);e.transform.rotation=Quaternion.LookRotation(away?dir:-dir);e.ApplyStun(2);await Task.Delay(50);e.transform.rotation=Quaternion.LookRotation(away?dir:-dir);
+   typeof(PlayerCombat).GetMethod("TryAttack",F).Invoke(combat,null);float t=Time.time;while(combat.IsSwinging&&Time.time-t<3){e.transform.rotation=Quaternion.LookRotation(away?dir:-dir);await Task.Delay(10);}}finally{CombatFeedback.Resolved-=on;}await Task.Delay(700);return got;}
+ public static async Task<string> Run(){for(int i=0;i<30&&(!RunDirector.Instance||!RunDirector.Instance.Player);i++)await Task.Delay(100);if(!RunDirector.Instance||!RunDirector.Instance.Player){Codice.UI.MainMenuUI.UnlockCheats("jam");Codice.Expedition.ExpeditionFloor.DebugSeed=1000;Codice.UI.RunNavigation.StartExpeditionTest(PlayerClass.Tank,1);for(int i=0;i<150&&(!RunDirector.Instance||!RunDirector.Instance.Player);i++)await Task.Delay(100);await Task.Delay(1500);}var p=RunDirector.Instance.Player;var room=UnityEngine.Object.FindAnyObjectByType<CombatTestRoom>();if(room){room.ClearEnemies();room.ChangeClass(PlayerClass.Tank);}else{Codice.UI.MainMenuUI.UnlockCheats("jam");JamDebug.ChangeClass(PlayerClass.Tank);}p.State.LaboratoryImmortal=true;var sceneName=UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;await Task.Delay(500);p.SetNarrativeControlsBlocked(false);var sb=new StringBuilder("scene="+sceneName+"\n");
+  var e=Dummy(p,false);await Task.Delay(300);
+  try{float front=await Strike(p,e,false);float back=await Strike(p,e,true);sb.AppendLine($"front={front:F1} back={back:F1} ratio={(front>0?back/front:0):F2} (expect 1.25)");
+   // flinch: an idle enemy reacts to a melee hit
+   e.ApplyStun(0);await Task.Delay(1300);bool before=e.IsStunned;e.ReceiveDamage(new DamageInfo{amount=5,melee=true,source=p.gameObject,direction=p.transform.forward});bool after=e.IsStunned;sb.AppendLine($"flinch: stunnedBefore={before} afterHit={after}");
+   e.ReceiveDamage(new DamageInfo{amount=5,melee=true,source=p.gameObject,direction=p.transform.forward});await Task.Delay(1300);e.ReceiveDamage(new DamageInfo{amount=5,melee=true,breaksGuard=true,source=p.gameObject,direction=p.transform.forward});sb.AppendLine("guard-breaking hit interrupts: stunned="+e.IsStunned);await Task.Delay(350);sb.AppendLine("flinch immunity: stunned after 0.35s and second hit="+e.IsStunned);
+   // perfect dodge
+   typeof(PlayerCharacter).GetMethod("PerfectDodge",F).Invoke(p,new object[]{new DamageInfo{amount=10,source=e.gameObject,direction=-p.transform.forward}});var w=p.State.ActiveWeapon;var m=p.GetComponent<PlayerMechanics>();float baseDamage=w.Damage*p.State.ClassDamageMultiplier;float first=m.RollBasicDamage(w),second=m.RollBasicDamage(w);
+   sb.AppendLine($"perfect dodge: window={(p.PerfectDodgeUntil>0)} first={first/baseDamage:F2}x second={second/baseDamage:F2}x timeScaleAfter={Time.timeScale}");
+   await Task.Delay(400);sb.AppendLine("timeScale restored="+Time.timeScale);
+  }finally{if(e)UnityEngine.Object.Destroy(e.gameObject);if(room){room.ChangeClass(PlayerClass.Warrior);p.SetNarrativeControlsBlocked(true);}}
+  return sb.ToString();}
+}

@@ -1,0 +1,12 @@
+using System.Linq;using System.Text;using UnityEngine;using UnityEngine.Rendering;using UnityEngine.Rendering.Universal;
+public static class AgentLightProbe{public static string Run(){var sb=new StringBuilder();
+ sb.AppendLine($"ambient mode={RenderSettings.ambientMode} sky={RenderSettings.ambientSkyColor} eq={RenderSettings.ambientEquatorColor} gr={RenderSettings.ambientGroundColor} int={RenderSettings.ambientIntensity} fog={RenderSettings.fogDensity} {RenderSettings.fogColor} probe0={RenderSettings.ambientProbe[0,0]:F3}");
+ var lights=Object.FindObjectsByType<Light>(FindObjectsSortMode.None);sb.AppendLine("lights="+lights.Length+" dir="+string.Join(";",lights.Where(l=>l.type==LightType.Directional).Select(l=>l.name+" "+l.intensity+" on="+l.isActiveAndEnabled))+" pointAvgInt="+lights.Where(l=>l.type==LightType.Point).Average(l=>l.intensity).ToString("F2"));
+ var rp=GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;sb.AppendLine("rp="+rp.name+" perObj="+rp.maxAdditionalLightsCount+" hdr="+rp.supportsHDR+" colorSpace="+QualitySettings.activeColorSpace);
+ foreach(var v in Object.FindObjectsByType<Volume>(FindObjectsSortMode.None)){sb.Append("volume "+v.name+" prio="+v.priority+" global="+v.isGlobal+": ");foreach(var c in v.sharedProfile.components)sb.Append(c.GetType().Name+(c is ColorAdjustments ca?"(exp="+ca.postExposure.value+",sat="+ca.saturation.value+")":"")+" ");sb.AppendLine();}
+ var p=Codice.Mechanics.RunDirector.Instance.Player;foreach(var h in Physics.RaycastAll(p.transform.position+Vector3.up,Vector3.down,3)){var r=h.collider.GetComponentInChildren<Renderer>()??h.collider.GetComponentInParent<Renderer>();if(r)sb.AppendLine("under player: "+h.collider.name+" mat="+r.sharedMaterial.name+" shader="+r.sharedMaterial.shader.name+" base="+(r.sharedMaterial.HasProperty("_BaseColor")?r.sharedMaterial.GetColor("_BaseColor").ToString():"-")+" layer="+r.gameObject.layer+" lightmapIdx="+r.lightmapIndex+" probes="+r.lightProbeUsage);}
+ return sb.ToString();}}
+public static class AgentAmbientTest{
+ public static string Gi(){DynamicGI.UpdateEnvironment();return "after UpdateEnvironment probe0="+RenderSettings.ambientProbe[0,0].ToString("F3");}
+ public static string Custom(){var sh=new UnityEngine.Rendering.SphericalHarmonicsL2();sh.AddAmbientLight(new Color(.22f,.25f,.29f));sh.AddDirectionalLight(Vector3.up,new Color(.32f,.35f,.4f),.5f);RenderSettings.ambientMode=UnityEngine.Rendering.AmbientMode.Custom;RenderSettings.ambientProbe=sh;return "custom probe0="+RenderSettings.ambientProbe[0,0].ToString("F3");}
+}

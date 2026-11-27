@@ -1,0 +1,5 @@
+using System.Linq;using System.Text;using UnityEditor;using UnityEngine;
+public static class AgentBones{public static string Run(){var sb=new StringBuilder();foreach(var n in new[]{"Shinobi","Mage","Tank"}){var go=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Presentation/Classes/"+n+".prefab");sb.AppendLine("== "+n+" fwd="+go.transform.forward+" rends="+string.Join(",",go.GetComponentsInChildren<Renderer>(true).Select(r=>r.name).Distinct().Take(14)));
+ foreach(var b in new[]{"B-head","B-neck","B-chest","B-spine","B-hips","B-shoulder.L","B-upperArm.L","B-forearm.L","B-hand.L","B-handProp.R","B-thigh.L","B-shin.L","B-foot.L"}){var t=go.GetComponentsInChildren<Transform>(true).FirstOrDefault(x=>x.name==b);if(t)sb.AppendLine(b+" p="+t.position.ToString("F2")+" ls="+t.lossyScale.x.ToString("F2")+" up="+t.up.ToString("F1")+" fwd="+t.forward.ToString("F1"));}
+ var s=go.GetComponentsInChildren<SkinnedMeshRenderer>(true).First();sb.AppendLine("skin bounds c="+s.bounds.center.ToString("F2")+" size="+s.bounds.size.ToString("F2"));}
+ return sb.ToString();}}

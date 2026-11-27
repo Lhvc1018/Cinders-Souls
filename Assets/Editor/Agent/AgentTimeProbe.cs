@@ -1,0 +1,2 @@
+using UnityEngine;
+public static class AgentTimeProbe{public static string Run(){var r=Codice.Mechanics.RunDirector.Instance;var b=r&&r.Expedition?r.Expedition.context.arena.ActiveBoss:null;return $"timeScale={Time.timeScale} time={Time.time:F1} paused={UnityEditor.EditorApplication.isPaused} runPhase={(r?r.Phase.ToString():"-")} boss={(b?b.State+" hp="+b.Health.ToString("0"):"none")} playerHp={(r&&r.Player?r.Player.State.Health:0)}";}}

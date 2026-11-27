@@ -1,0 +1,2 @@
+using System.IO;using System.Linq;using UnityEditor;using UnityEngine;
+public static class AgentClipInfo{public static string Run(){var dir="Assets/07_Animacion/Thymesia";var names=File.ReadAllText(Path.Combine(Application.dataPath,"../AgentScripts/_bridge/clips.txt")).Split(',');return string.Join("\n",names.Select(n=>{var c=AssetDatabase.LoadAssetAtPath<AnimationClip>(dir+"/"+n.Trim()+".anim");return c?n+" len="+c.length.ToString("F2")+" human="+c.isHumanMotion+" loop="+c.isLooping:n+" missing";}));}}
