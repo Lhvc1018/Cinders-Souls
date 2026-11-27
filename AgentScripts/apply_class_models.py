@@ -1,0 +1,4 @@
+from pathlib import Path
+r=Path('D:/67/Last67Seconds-Maps/Assets/02_Scripts')
+p=r/'Presentation/ActorPresentation.cs';s=p.read_text(encoding='utf-8-sig');s=s.replace('var human=Resources.Load<GameObject>("Presentation/Human/HumanPlayer");','var human=Resources.Load<GameObject>("Presentation/Classes/"+player.State.Class)??Resources.Load<GameObject>("Presentation/Human/HumanPlayer");');s=s.replace('var renderers=visual.GetComponentsInChildren<Renderer>();','var renderers=visual.GetComponentsInChildren<SkinnedMeshRenderer>();');p.write_text(s,encoding='utf-8')
+p=r/'Characters/PlayerCharacter.Motor.cs';s=p.read_text(encoding='utf-8-sig');s=s.replace('public bool Sprinting => SprintRequested &&','public bool Sprinting =>');s=s.replace('(Sprinting?6f:3.4f)','6f');p.write_text(s,encoding='utf-8')

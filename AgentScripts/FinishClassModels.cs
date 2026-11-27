@@ -1,0 +1,1 @@
+using UnityEngine;using UnityEditor;public static class FinishClassModels{public static string Run(){AssetDatabase.SaveAssets();Selection.activeObject=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Presentation/Classes/Warrior.prefab");EditorGUIUtility.PingObject(Selection.activeObject);return "Class models saved and Warrior selected";}}

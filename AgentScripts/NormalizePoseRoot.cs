@@ -1,0 +1,4 @@
+using System;using System.Linq;using UnityEditor;using UnityEngine;
+public static class NormalizePoseRoot{
+ public static string Run(){int count=0;foreach(string guid in AssetDatabase.FindAssets("t:AnimationClip",new[]{"Assets/Resources/Presentation/Human"})){var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(AssetDatabase.GUIDToAssetPath(guid));foreach(var binding in AnimationUtility.GetCurveBindings(clip)){if(binding.propertyName!="RootT.x"&&binding.propertyName!="RootT.z"&&!(binding.propertyName=="RootT.y"&&(clip.name=="JumpRise"||clip.name=="Fall")))continue;var old=AnimationUtility.GetEditorCurve(clip,binding);float value=old.Evaluate(0);AnimationUtility.SetEditorCurve(clip,binding,AnimationCurve.Constant(0,clip.length,value));count++;}EditorUtility.SetDirty(clip);}AssetDatabase.SaveAssets();return "Removed horizontal skeletal displacement from "+count+" root tracks; capsule owns translation";}
+}

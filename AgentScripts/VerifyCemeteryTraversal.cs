@@ -1,0 +1,6 @@
+using System;using UnityEngine;using UnityEngine.AI;using Codice.Mechanics;
+public static class VerifyCemeteryTraversal {
+ public static string Gallery(){var r=RunDirector.Instance;var f=r.Expedition;int room=f.PlayerRoom;var p=f.Center(room)+Vector3.right*(f.Layout.Plans[room].width*4-3f)+Vector3.up*1.6f;NavMeshHit hit;if(!NavMesh.SamplePosition(p,out hit,1f,NavMesh.AllAreas))throw new Exception("Gallery missing navigation");if(hit.position.y<1.2f)throw new Exception("Gallery sampled ground instead of deck");var path=new NavMeshPath();if(!NavMesh.CalculatePath(r.Player.transform.position,hit.position,NavMesh.AllAreas,path)||path.status!=NavMeshPathStatus.PathComplete)throw new Exception("Gallery unreachable");return "PASS elevated terrace reachable at height "+hit.position.y;}
+ public static string Return(){var r=RunDirector.Instance;var cc=r.Player.GetComponent<CharacterController>();cc.enabled=false;r.Player.transform.position=r.Expedition.Center(0);cc.enabled=true;return "Returned to entrance";}
+ public static string Label(){var r=RunDirector.Instance;if(r.Expedition.PlayerRoom!=0||r.Level!=1)throw new Exception("Room label mismatch "+r.Expedition.PlayerRoom+"/"+r.Level);return "PASS revisited entrance label=1";}
+}

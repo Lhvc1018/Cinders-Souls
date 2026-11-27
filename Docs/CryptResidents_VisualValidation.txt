@@ -1,0 +1,10 @@
+CreepyDoll Idle height=0,000..1,446
+CreepyDoll Chase height=0,000..1,450
+CreepyDoll Melee height=0,000..1,431
+CreepyDoll Stun height=0,000..1,409
+CreepyDoll Death height=0,005..0,619
+CryptSkeleton Idle height=-0,001..2,138
+CryptSkeleton Chase height=-0,011..2,191
+CryptSkeleton Melee height=-0,010..2,100
+CryptSkeleton Stun height=0,000..2,065
+CryptSkeleton Death height=0,005..0,506

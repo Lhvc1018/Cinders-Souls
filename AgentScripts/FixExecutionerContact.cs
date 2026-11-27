@@ -1,0 +1,2 @@
+using UnityEngine;using UnityEditor;
+public static class FixExecutionerContact {public static string Run(){string p="Assets/Resources/ExpeditionEnemies/Cemetery/Executioner.prefab";var g=PrefabUtility.LoadPrefabContents(p);try{if(!g.GetComponent<Codice.Presentation.CemeteryFootContact>())g.AddComponent<Codice.Presentation.CemeteryFootContact>();g.GetComponent<UnityEngine.AI.NavMeshAgent>().baseOffset=0;PrefabUtility.SaveAsPrefabAsset(g,p);}finally{PrefabUtility.UnloadPrefabContents(g);}return "Executioner foot contact installed";}}

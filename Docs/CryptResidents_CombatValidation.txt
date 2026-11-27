@@ -1,0 +1,2 @@
+CreepyDoll moved=4,68m bone motion=49,6deg states=Chase,Melee,Idle stun and death passed.
+CryptSkeleton moved=4,83m bone motion=60,8deg states=Chase,Melee,Idle stun and death passed.

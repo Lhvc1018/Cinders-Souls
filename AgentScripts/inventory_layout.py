@@ -1,0 +1,4 @@
+from pathlib import Path
+p=Path('Assets/02_Scripts/UI/RunHUD.Menus.cs');s=p.read_text(encoding='utf-8');a=s.index('            pausePanel=Panel(');b=s.index('            defeatPanel=Panel(',a);s=s[:a]+'            BuildInventory();\n'+s[b:];a=s.index('            if(Paused)\n            {var s=Player.State;');b=s.index('            if(!shopping)return;',a);s=s[:a]+'            if(Paused)RefreshInventory();\n'+s[b:];p.write_text(s,encoding='utf-8')
+p=Path('Assets/02_Scripts/Mechanics/TreasureChest.cs');s=p.read_text(encoding='utf-8-sig').replace('Mathf.Clamp(rewardTier,1,2)','Mathf.Clamp(rewardTier,1,3)');p.write_text(s,encoding='utf-8')
+p=Path('Assets/02_Scripts/UI/RunHUD.cs');s=p.read_text(encoding='utf-8').replace('BossAttack.Charge=>','BossAttack.BloodNova=>"Nova de sangre · Busca un hueco",BossAttack.Charge=>');p.write_text(s,encoding='utf-8')

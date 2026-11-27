@@ -1,0 +1,1 @@
+Boss passed: Idle,Melee,Slam; sweep, slam, stun and death.

@@ -1,0 +1,7 @@
+Sweep: telegraph, delayed hit and blood pool passed.
+Slam: telegraph, delayed hit and blood pool passed.
+Phase 1: 1 blood projectiles.
+Phase 2: 3 blood projectiles.
+Phase 3: 5 blood projectiles.
+Blood projectile stopped at a solid collider without damaging the player behind it.
+Windup interruption, poison telegraph, armor bypass, pause, hazard cleanup and final victory passed.

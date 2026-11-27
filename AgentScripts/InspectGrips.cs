@@ -1,0 +1,4 @@
+using System;using System.Linq;using UnityEngine;using UnityEditor;using Codice.Characters;using Codice.Presentation;
+public static class InspectGrips {
+public static string Run(){var cat=WeaponVisualCatalog.Load();var lines=new System.Collections.Generic.List<string>();foreach(var pair in cat.tiers.Select((p,i)=>(p,n:i.ToString())).Concat(new[]{(cat.katana,"katana")})){if(!pair.Item1)continue;var go=UnityEngine.Object.Instantiate(pair.Item1);var rs=go.GetComponentsInChildren<Renderer>();var b=rs[0].bounds;foreach(var r in rs)b.Encapsulate(r.bounds);lines.Add(pair.Item2+" "+AssetDatabase.GetAssetPath(pair.Item1)+" scale="+go.transform.localScale+" bounds="+b+" children="+string.Join(";",go.GetComponentsInChildren<Transform>().Take(5).Select(t=>t.name+":"+t.localPosition+":"+t.localEulerAngles+":"+t.localScale)));UnityEngine.Object.DestroyImmediate(go);}return string.Join("\n",lines);}}
+

@@ -1,0 +1,6 @@
+2560x1080: 29 checks passed for five classes, weapon switching, fractions, low health, cooldowns and passive inventory.
+1280x720: 29 checks passed for five classes, weapon switching, fractions, low health, cooldowns and passive inventory.
+3840x2160: 29 checks passed for five classes, weapon switching, fractions, low health, cooldowns and passive inventory.
+1920x1080: 34 checks passed for five classes, weapon switching, fractions, low health, cooldowns and passive inventory.
+1280x720: 34 checks passed for five classes, weapon switching, fractions, low health, cooldowns and passive inventory.
+3840x2160: 34 checks passed for five classes, weapon switching, fractions, low health, cooldowns and passive inventory.

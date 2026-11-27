@@ -1,0 +1,1 @@
+using UnityEngine;using UnityEngine.Rendering;using UnityEngine.Rendering.Universal;public static class TrialResolution{public static string Run(){var p=GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;p.renderScale=2f/3f;return "Trial render scale 0.667";}}

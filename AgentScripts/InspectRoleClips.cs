@@ -1,0 +1,2 @@
+using System.Linq;using UnityEngine;using UnityEditor;
+public static class InspectRoleClips{public static string Run(){var paths=AssetDatabase.FindAssets("t:AnimationClip",new[]{"Assets/Resources/Presentation/Human"}).Select(AssetDatabase.GUIDToAssetPath).Where(p=>new[]{"StaffCast.anim","Conjure.anim","ShootBow.anim","SwordCombo1.anim","KatanaSlashA.anim","HammerWalk.anim","DualSlice.anim"}.Any(p.EndsWith));return string.Join("\n",paths.Select(p=>{var c=AssetDatabase.LoadAssetAtPath<AnimationClip>(p);return c.name+" length="+c.length+" human="+c.isHumanMotion;}));}}

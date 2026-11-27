@@ -1,0 +1,1 @@
+using Codice.UI;using Codice.Characters;public static class StartReadability{public static string Run(){MainMenuUI.UnlockCheats("jam");RunNavigation.StartExpeditionTest(PlayerClass.Shinobi,1);return "World 1 Shinobi test started";}}

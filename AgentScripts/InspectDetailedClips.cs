@@ -1,0 +1,1 @@
+using System;using System.Linq;using UnityEngine;using UnityEditor;public static class InspectDetailedClips{public static string Run(){return string.Join("\n",Resources.Load<GameObject>("Presentation/Classes/Warrior").GetComponentInChildren<Animator>().runtimeAnimatorController.animationClips.Select(c=>c.name).Distinct());}}

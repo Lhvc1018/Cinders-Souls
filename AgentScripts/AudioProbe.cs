@@ -1,0 +1,2 @@
+using UnityEngine;using System.Linq;using Codice.Presentation;using UnityEditor;
+public static class AudioProbe{public static string Run(){var a=GameAudio.Instance;return "paused="+EditorApplication.isPaused+" active="+a.isActiveAndEnabled+"\n"+string.Join("\n",a.GetComponentsInChildren<AudioSource>().Where(s=>s.loop).Select(s=>s.name+" enabled="+s.enabled+" active="+s.gameObject.activeInHierarchy+" state="+s.clip?.loadState+" length="+s.clip?.length+" time="+s.time+" play="+s.isPlaying));}}

@@ -1,0 +1,103 @@
+        // ---------------- World 3: verticality and optional side crypts ----------------
+        public sealed class CellLevel{public float a,b;public Vector2Int dir;public bool Stair=>Math.Abs(b-a)>.01f;public float Low=>Math.Min(a,b);public float High=>Math.Max(a,b);}
+        /// Per-cell walking level (metres). Flat cells have a==b; stair cells rise from a (entry edge) to b along dir.
+        public readonly Dictionary<Vector2Int,CellLevel> Levels=new Dictionary<Vector2Int,CellLevel>();
+        public readonly List<int> SideRooms=new List<int>();
+        float[] roomHeights;
+        public bool Vertical=>roomHeights!=null&&Array.Exists(roomHeights,h=>Math.Abs(h)>.01f);
+        public float Height(int room)=>roomHeights==null||room<0||room>=roomHeights.Length?0:roomHeights[room];
+        public float LevelAt(Vector2Int cell)=>Levels.TryGetValue(cell,out var l)?l.Low:0;
+        /// Walking height of a cell at the edge facing `side`; NaN for the lateral sides of a stair.
+        public float EdgeHeight(Vector2Int cell,Vector2Int side){if(!Levels.TryGetValue(cell,out var l))return 0;if(!l.Stair)return l.a;if(side==l.dir)return l.b;if(side==-l.dir)return l.a;return float.NaN;}
+        int RoomOf(Vector2Int cell){for(int i=0;i<Rooms.Count;i++){var d=cell-Rooms[i];if(Plans[i].Contains(d.x,d.y))return i;}return -1;}
+        static readonly Vector2Int[] Sides={Vector2Int.up,Vector2Int.right,Vector2Int.down,Vector2Int.left};
+        void AddSideRooms(int seed)
+        {
+            var rng=new System.Random(seed^0x51DE);
+            var candidates=new List<int>();for(int i=1;i<Boss;i++)if(i!=SecretRoom&&i!=StatueRoom&&i!=MerchantRoom)candidates.Add(i);
+            for(int i=candidates.Count-1;i>0;i--){int j=rng.Next(i+1);var t=candidates[i];candidates[i]=candidates[j];candidates[j]=t;}
+            int wanted=1+rng.Next(2);
+            foreach(int host in candidates)
+            {
+                if(SideRooms.Count>=wanted)break;
+                foreach(int sign in rng.Next(2)==0?new[]{-1,1}:new[]{1,-1})
+                {
+                    var plan=new ChamberPlan{width=3,depth=2,shape=ChamberShape.CutCorners};
+                    const int gap=3;var center=Rooms[host]+new Vector2Int(sign*(Plans[host].width+gap+plan.width+1),0);
+                    var fresh=new HashSet<Vector2Int>();
+                    for(int x=-plan.width;x<=plan.width;x++)for(int z=-plan.depth;z<=plan.depth;z++)if(plan.Contains(x,z))fresh.Add(center+new Vector2Int(x,z));
+                    var path=new List<Vector2Int>();var p=Rooms[host];path.Add(p);while(p.x!=center.x){p.x+=sign;path.Add(p);}
+                    foreach(var c in path)if(RoomOf(c)!=host)fresh.Add(c);
+                    bool ok=true;
+                    foreach(var n in fresh)
+                    {
+                        if(Cells.Contains(n)){ok=false;break;}
+                        foreach(var s in Sides){var q=n+s;if(fresh.Contains(q)||!Cells.Contains(q))continue;if(path.Contains(n)&&RoomOf(q)==host&&s.y==0)continue;ok=false;break;}
+                        if(!ok)break;
+                    }
+                    if(!ok)continue;
+                    int index=Rooms.Count;Rooms.Add(center);Plans.Add(plan);foreach(var n in fresh)Cells.Add(n);
+                    Links.Add(new Vector2Int(host,index));Corridors.Add(path);SideRooms.Add(index);break;
+                }
+            }
+        }
+        void Elevate(int seed)
+        {
+            var rng=new System.Random(seed^0x7E11);
+            var usage=new Dictionary<Vector2Int,int>();foreach(var path in Corridors)foreach(var c in new HashSet<Vector2Int>(path))usage[c]=usage.TryGetValue(c,out var u)?u+1:1;
+            var owner=new Dictionary<Vector2Int,int>();foreach(var c in Cells)owner[c]=RoomOf(c);
+            for(int attempt=0;attempt<40;attempt++)
+            {
+                bool gentle=attempt>=20;var h=new float[Rooms.Count];var set=new bool[Rooms.Count];set[0]=true;
+                foreach(var e in Links)
+                {
+                    if(set[e.y])continue;set[e.y]=true;
+                    if(e.y==SecretRoom){h[e.y]=0;continue;}
+                    float[] options=SideRooms.Contains(e.y)?new[]{-1.2f,1.2f}:gentle?new[]{-1.2f,0,1.2f}:new[]{-2.4f,-1.2f,1.2f,2.4f,1.2f,-1.2f,0};
+                    h[e.y]=Mathf.Clamp(h[e.x]+options[rng.Next(options.Length)],-2.4f,4.8f);
+                }
+                if(TryLevels(h,usage,owner)){roomHeights=h;return;}
+            }
+            TryLevels(new float[Rooms.Count],usage,owner);roomHeights=new float[Rooms.Count];
+        }
+        bool TryLevels(float[] h,Dictionary<Vector2Int,int> usage,Dictionary<Vector2Int,int> owner)
+        {
+            Levels.Clear();
+            bool Set(Vector2Int c,float a,float b,Vector2Int dir)
+            {
+                if(Levels.TryGetValue(c,out var o))return Math.Abs(o.a-a)<.01f&&Math.Abs(o.b-b)<.01f;
+                Levels[c]=new CellLevel{a=a,b=b,dir=dir};return true;
+            }
+            foreach(var c in Cells){int r=owner[c];if(r>=0&&!Set(c,h[r],h[r],Vector2Int.zero))return false;}
+            for(int k=0;k<Links.Count;k++)
+            {
+                var path=Corridors[k];float ha=h[Links[k].x],hb=h[Links[k].y],delta=hb-ha;
+                var free=new List<int>();for(int j=0;j<path.Count;j++)if(owner[path[j]]<0)free.Add(j);
+                int f0=int.MaxValue,n=0;
+                if(Math.Abs(delta)>.01f)
+                {
+                    n=Mathf.CeilToInt(Math.Abs(delta)/1.2f-.001f);
+                    int bestStart=-1,bestLen=0,runStart=-1,runLen=0;
+                    for(int j=1;j<path.Count-1;j++)
+                    {
+                        bool straight=owner[path[j]]<0&&usage[path[j]]==1&&path[j]-path[j-1]==path[j+1]-path[j]&&owner[path[j-1]]<0&&owner[path[j+1]]<0;
+                        if(straight){if(runLen==0)runStart=j;runLen++;if(runLen>bestLen){bestLen=runLen;bestStart=runStart;}}else runLen=0;
+                    }
+                    if(bestLen<n)return false;
+                    f0=bestStart+(bestLen-n)/2;
+                }
+                foreach(int j in free)
+                {
+                    bool ok=j<f0?Set(path[j],ha,ha,Vector2Int.zero):j<f0+n?Set(path[j],ha+delta*(j-f0)/n,ha+delta*(j-f0+1)/n,path[j+1]-path[j]):Set(path[j],hb,hb,Vector2Int.zero);
+                    if(!ok)return false;
+                }
+            }
+            foreach(var c in Cells)if(!Levels.ContainsKey(c))return false;
+            // every corridor step must meet at the same height on both sides of the shared edge
+            foreach(var path in Corridors)for(int j=1;j<path.Count;j++)
+            {
+                var s=path[j]-path[j-1];float x=EdgeHeight(path[j-1],s),y=EdgeHeight(path[j],-s);
+                if(float.IsNaN(x)||float.IsNaN(y)||Math.Abs(x-y)>.01f)return false;
+            }
+            return true;
+        }

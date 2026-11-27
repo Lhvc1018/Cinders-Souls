@@ -1,0 +1,1 @@
+60 checks passed across five classes: armor absorption, overflow, delay, regeneration cap, poison, mana costs and snapshots.

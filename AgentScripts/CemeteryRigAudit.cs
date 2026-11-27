@@ -1,0 +1,2 @@
+using System.Linq;using UnityEngine;using UnityEditor;
+public static class CemeteryRigAudit{public static string Run(){return string.Join("\n",AssetDatabase.FindAssets("t:Model",new[]{"Assets/03_Models/Cemetery"}).Select(g=>{var p=AssetDatabase.GUIDToAssetPath(g);var o=AssetDatabase.LoadAssetAtPath<GameObject>(p);var a=o.GetComponentInChildren<Animator>();return p+" rig="+(a&&a.avatar?a.avatar.isHuman+"/"+a.avatar.isValid:"none")+" nodes="+string.Join(",",o.GetComponentsInChildren<Transform>().Take(30).Select(t=>t.name));}));}}

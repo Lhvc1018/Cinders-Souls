@@ -1,0 +1,5 @@
+Arrows max size=0,408m
+Passive max size=0,220m
+Mana max size=0,184m
+Ammunition max size=0,228m
+Potion height=0.18m; chests width=1.05m; direct gold credited without world coins.

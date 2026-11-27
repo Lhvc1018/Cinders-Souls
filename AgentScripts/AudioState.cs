@@ -1,0 +1,2 @@
+using UnityEngine;using Codice.Mechanics;using Codice.Presentation;using System.Linq;
+public static class AudioState{public static string Run(){var r=RunDirector.Instance;var b=r.Expedition.context.arena.ActiveBoss;var a=GameAudio.Instance;return "hp="+b.Health+"/"+b.MaxHealth+" cue="+a.Count(SoundCue.BossLow)+" phase="+r.Phase+" scale="+Time.timeScale+"\n"+string.Join("\n",a.GetComponentsInChildren<AudioSource>().Where(s=>s.name.Contains("tension")||s.name.Contains("Music")).Select(s=>s.name+" clip="+s.clip+" playing="+s.isPlaying+" volume="+s.volume));}}

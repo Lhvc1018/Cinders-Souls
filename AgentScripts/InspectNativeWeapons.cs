@@ -1,0 +1,2 @@
+using System.Linq;using UnityEngine;using UnityEditor;
+public static class InspectNativeWeapons{public static string Run(){return string.Join("\n",new[]{"Duende Mutante","Lanza del Infierno"}.Select(n=>{var p=Resources.Load<GameObject>("ExpeditionEnemies/"+n);return n+" "+string.Join(";",p.GetComponentsInChildren<Renderer>(true).Select(r=>r.name+" "+r.GetType().Name+" mesh="+(r.GetComponent<MeshFilter>()?r.GetComponent<MeshFilter>().sharedMesh.name:r is SkinnedMeshRenderer s?s.sharedMesh.name:"none")));}));}}

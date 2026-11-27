@@ -1,0 +1,7 @@
+Seed 67: 22 complete baked navigation routes, including all corridors.
+Starter chest, tier-one pickup, duplicate denial, healing interrupt, pause, 40% heal, single-use shrine, telegraph, spike damage and jump clearance passed.
+Seed 67: CharacterController traversed all six rooms in 968 collision-checked steps; seals, rewards, minimap tracking and final victory passed.
+Seed 91: 22 complete baked navigation routes, including all corridors.
+Seed 2030848173: 22 complete baked navigation routes, including all corridors.
+Seed 2030848173: CharacterController traversed all six rooms in 884 collision-checked steps; seals, rewards, minimap tracking and final victory passed.
+Starter chest, tier-one pickup, duplicate denial, healing interrupt, pause, 40% heal, single-use shrine, telegraph, spike damage and jump clearance passed.

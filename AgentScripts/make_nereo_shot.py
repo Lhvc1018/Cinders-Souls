@@ -1,0 +1,2 @@
+from pathlib import Path
+s=Path('Assets/Editor/Agent/AgentVigiaShot.cs').read_text(encoding='utf-8-sig').replace('AgentVigiaShot','NereoShot').replace('var body=Codice.Presentation.VigiaLook.Dress(host);','var body=UnityEngine.Object.Instantiate(Resources.Load<GameObject>("WorldProgression/Nereo"),host.transform,false).transform;').replace('vigia.png','nereo.png');Path('AgentScripts/NereoShot.cs').write_text(s,encoding='utf-8')

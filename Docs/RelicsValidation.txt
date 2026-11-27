@@ -1,0 +1,1 @@
+[Cinders validation] 113 checks passed: five classes, passive lifetime, duplicates, replacement, cooldowns, death/reset, snapshot and seven skeletal takes per enemy.

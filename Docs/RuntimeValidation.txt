@@ -1,0 +1,1 @@
+[Runtime validation] Hound moved 11,99 m; front-leg motion 38,3 degrees; states Chase,Melee. Stun, death persistence, frost, cooldown, pause and room reward passed.

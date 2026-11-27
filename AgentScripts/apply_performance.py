@@ -1,0 +1,12 @@
+from pathlib import Path
+root=Path('Assets/02_Scripts')
+p=root/'Multiplayer/LanSession.cs';s=p.read_text(encoding='utf-8-sig');s=s.replace('float heartbeat,nextSend,lastServer,clientYaw,clientPitch;','float heartbeat,nextSend,lastServer,clientYaw,clientPitch;\n        float pingSent=-1,pingReceived=-100,pingMs=-1;\n        public float PingMilliseconds=>client&&Time.realtimeSinceStartup-pingReceived<5?pingMs:-1;')
+s=s.replace('if(msg.type=="lobby"){','if(msg.type=="pong"){if(msg.elapsed==pingSent){pingMs=Mathf.Max(0,(Time.realtimeSinceStartup-pingSent)*1000);pingReceived=Time.realtimeSinceStartup;}}else if(msg.type=="lobby"){',1)
+s=s.replace('Send(new LanMessage{type="ping"});','pingSent=Time.realtimeSinceStartup;Send(new LanMessage{type="ping",elapsed=pingSent});')
+s=s.replace('            if(msg.type!="input"||!peer.player', '            if(msg.type=="ping"){peer.wire.Send(JsonUtility.ToJson(new LanMessage{type="pong",elapsed=msg.elapsed}));return;}\n            if(msg.type!="input"||!peer.player',1);p.write_text(s,encoding='utf-8')
+p=root/'UI/MainMenuUI.cs';s=p.read_text(encoding='utf-8-sig');needle='            Button(options,"VOLVER",40,757';idx=s.index(needle);s=s[:idx]+'''            var quality=Button(options,"",40,710,680,38,()=>{});
+            var qualityText=quality.GetComponentInChildren<Text>();
+            System.Action refreshQuality=()=>qualityText.text=Codice.Presentation.RuntimePerformance.NativeResolution?"RESOLUCIÓN 3D: NATIVA":"RESOLUCIÓN 3D: FLUIDA (MÁX. 1440p)";
+            quality.onClick.AddListener(()=>{Codice.Presentation.RuntimePerformance.ToggleResolution();refreshQuality();});refreshQuality();
+'''+s[idx:];p.write_text(s,encoding='utf-8')
+p=root/'Bosses/BossCharacter.cs';s=p.read_text(encoding='utf-8-sig');s=s.replace('                if (bowWeapon) bowWeapon.SetActive(bow);','                if(!bloodInquisitor)ShowStandardTelegraph();\n                if (bowWeapon) bowWeapon.SetActive(bow);');s=s.replace('        void ExecuteAttack()\n        {','        void ExecuteAttack()\n        {\n            ClearStandardTelegraph();');s=s.replace('        void LateUpdate()\n        {','        void LateUpdate()\n        {\n            if(standardWarning&&(!IsAlive||!Target||!Target.State.IsAlive||State!=BossState.Windup))ClearStandardTelegraph();');s=s.replace('        void OnDisable() { Cleanup(); }','        void OnDisable() { ClearStandardTelegraph();Cleanup(); }');p.write_text(s,encoding='utf-8')

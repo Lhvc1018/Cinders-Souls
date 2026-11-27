@@ -1,0 +1,7 @@
+from pathlib import Path
+p=Path('Assets/02_Scripts/Presentation/ActorPresentation.cs');s=p.read_text(encoding='utf-8');s=s.replace('            var human=Resources.Load<GameObject>', '            var firstPersonVisual=visual;\n            var human=Resources.Load<GameObject>');s=s.replace('armsRoot=Instantiate(visual,player.view.transform);','armsRoot=Instantiate(firstPersonVisual,player.view.transform);').replace('armsRoot.transform.localScale=newHuman?visual.transform.localScale:Vector3.one*.55f;', 'armsRoot.transform.localScale=Vector3.one*.55f;')
+a=s.index('            if(newHuman){armsRoot.transform.localPosition=');b=s.index('            foreach(var renderer',a);s=s[:a]+'            if(newHuman){foreach(var r in visual.GetComponentsInChildren<Renderer>())r.shadowCastingMode=ShadowCastingMode.ShadowsOnly;gameObject.AddComponent<HumanPreviewCamera>();}\n'+s[b:]
+s='\n'.join(l for l in s.split('\n') if 'if(newHuman&&renderer is SkinnedMeshRenderer' not in l)
+s=s.replace('Configure(Arms,playerController);','Configure(Arms,PresentationLibrary.Load().medium);')
+a=s.index('            if(Body&&Body.isHuman&&Body.name=="Humanoid pilgrim")');b=s.index('            weaponsCalibrated=true;',a);s=s[:a]+s[b:];p.write_text(s,encoding='utf-8')
+p=Path('AgentScripts/InventoryIcons.cs');s=p.read_text(encoding='utf-8').replace('importer.alphaIsTransparency=true;', 'importer.spriteImportMode=SpriteImportMode.Single;importer.alphaIsTransparency=true;');p.write_text(s,encoding='utf-8')

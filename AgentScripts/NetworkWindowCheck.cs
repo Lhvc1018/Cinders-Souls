@@ -1,0 +1,1 @@
+using System;using Codice.Multiplayer;public static class NetworkWindowCheck{public static string Run(){foreach(float r in new[]{0f,.05f,.1f,.15f,.2f,.5f,1f}){int w=LanSession.SnapshotWindow(r);if(w<2||w>8)throw new Exception("Unbounded window");}return "PASS bounded window: 150ms="+LanSession.SnapshotWindow(.15f)+"; 200ms="+LanSession.SnapshotWindow(.2f);}}

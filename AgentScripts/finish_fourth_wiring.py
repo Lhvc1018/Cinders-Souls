@@ -1,0 +1,4 @@
+from pathlib import Path
+p=Path('Assets/02_Scripts/Expedition/ExpeditionFloor.Contents.cs');s=p.read_text(encoding='utf-8-sig').replace('merchant.transform.localScale*=1.5f','merchant.transform.localScale*=1.08f');p.write_text(s,encoding='utf-8')
+p=Path('Assets/02_Scripts/Mechanics/CombatTestRoom.cs');s=p.read_text(encoding='utf-8-sig').replace('Resources.LoadAll<GameObject>("ExpeditionEnemies")','Resources.LoadAll<GameObject>("ExpeditionEnemies").Concat(Resources.LoadAll<GameObject>("WorldFour"))');p.write_text(s,encoding='utf-8')
+p=Path('Assets/02_Scripts/Expedition/ExpeditionFloor.Secret.cs');s=p.read_text(encoding='utf-8-sig').replace('var go=Place(wallPrefab,new Vector3(direction*10,0,0),90,root);','var go=FloorNumber>=10?Forge("Wall",new Vector3(direction*10,0,0),90,root):Place(wallPrefab,new Vector3(direction*10,0,0),90,root);');p.write_text(s,encoding='utf-8')

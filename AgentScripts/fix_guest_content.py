@@ -1,0 +1,15 @@
+from pathlib import Path
+import shutil
+r=Path('Assets/02_Scripts');b=Path('D:/67/CindersBackups/GuestContent-20261121');b.mkdir(parents=True,exist_ok=True)
+files=['Expedition/ExpeditionFloor.cs','Multiplayer/LanSession.cs','Multiplayer/LanSession.Living.cs','Presentation/SpellFlightVisual.cs']
+for f in files:
+ p=b/f;p.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(r/f,p)
+p=r/files[3];s=p.read_text(encoding='utf-8-sig').replace('  ProjectileStyle style;','  public ProjectileStyle Style=>style;\n  ProjectileStyle style;');p.write_text(s,encoding='utf-8')
+p=r/files[1];s=p.read_text(encoding='utf-8-sig');s=s.replace('key="Shot",position=shot.transform.position','key="Shot",kind=(int)(shot.GetComponent<SpellFlightVisual>()?shot.GetComponent<SpellFlightVisual>().Style:ProjectileStyle.Arcane),position=shot.transform.position');needle='            if(entity.key=="Altar")';idx=s.index(needle);s=s[:idx]+'''            if(entity.key=="Shot"){var shot=new GameObject("Network enemy spell");shot.transform.position=entity.position;shot.transform.rotation=entity.rotation;SpellFlightVisual.Add(shot,(ProjectileStyle)Mathf.Clamp(entity.kind,0,3));return shot;}
+            if(entity.key=="BoonPlinth"){var plinth=GameObject.CreatePrimitive(PrimitiveType.Cylinder);plinth.transform.localScale=new Vector3(2.4f,.35f,2.4f);var stone=Resources.Load<Material>("WorldFour/Basalto estratificado");if(stone)plinth.GetComponent<Renderer>().sharedMaterial=stone;return plinth;}
+'''+s[idx:];p.write_text(s,encoding='utf-8')
+p=r/files[2];s=p.read_text(encoding='utf-8-sig');idx=s.index('            foreach(var o in FindObjectsByType<AshBoonOrb>');s=s[:idx]+'''            foreach(var altar in FindObjectsByType<AshBoonAltar>())entities.Add(new LanEntity{id=Id(altar),key="BoonPlinth",position=altar.transform.position+Vector3.up*.35f,rotation=altar.transform.rotation});
+'''+s[idx:];p.write_text(s,encoding='utf-8')
+p=r/files[0];s=p.read_text(encoding='utf-8-sig');s=s.replace('||!context.player.State.IsAlive||director.Phase','||director.Phase');a=s.index('            int next=Layout.RoomAt(context.player.transform.position);');end=s.index('\n        }',a);s=s[:a]+'''            if(Codice.Multiplayer.LanSession.Host){foreach(var participant in Codice.Multiplayer.LanSession.Instance.Players()){if(!participant||!participant.State.IsAlive)continue;int next=Layout.RoomAt(participant.transform.position);if(next>=0&&!Cleared[next]&&Layout.Inside(next,participant.transform.position)&&EnterRoom(next,participant))break;}}
+            else {int next=Layout.RoomAt(context.player.transform.position);if(next>=0&&!Cleared[next]&&Layout.Inside(next,context.player.transform.position))EnterRoom(next);}
+'''+s[end:];s=s.replace('public bool EnterRoom(int index)\n        {','public bool EnterRoom(int index,PlayerCharacter entrant=null)\n        {\n            entrant=entrant?entrant:context.player;');s=s.replace('||Cleared[index]||!context.player.State.IsAlive','||Cleared[index]||!entrant.State.IsAlive').replace('if(!Layout.Inside(index,context.player.transform.position))','if(!Layout.Inside(index,entrant.transform.position))');p.write_text(s,encoding='utf-8')
