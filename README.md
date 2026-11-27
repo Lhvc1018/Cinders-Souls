@@ -1,12 +1,12 @@
 # Cinders Souls
 
-Action RPG de fantasía oscura para Windows x64. Explora mazmorras procedurales en solitario o con hasta tres compañeros.
+Proyecto editable de Unity para el Action RPG cooperativo de fantasía oscura. Admite partidas de uno a cuatro jugadores.
 
-## Descargar y jugar
+## Abrir en Unity
 
-1. Abre [Releases](../../releases) y descarga el ZIP de Windows.
-2. Extrae toda la carpeta y abre `CindersSouls.exe`.
-3. Para jugar juntos, todos deben instalar la misma versión. En **Cooperativo**, selecciona **Por internet** o **Misma red**.
+1. Instala Git LFS y ejecuta `git lfs install`.
+2. Clona este repositorio y ejecuta `git lfs pull` dentro de la copia.
+3. En Unity Hub, añade la carpeta raíz y ábrela con Unity **6000.5.6f1**.
+4. Espera la importación de los recursos. Abre `Assets/00_Scenes/MainMenu.unity` y pulsa Play.
 
-Este repositorio distribuye la versión jugable compilada para Windows.
-También incluye los scripts de juego y editor, las escenas y el inventario de paquetes. Para editar y recompilar se requieren los recursos de arte, los paquetes locales y la configuración del proyecto original.
+El proyecto incluye Assets, Packages, ProjectSettings, archivos de arte y herramientas de desarrollo. Unity regenera la carpeta Library durante la primera importación.
